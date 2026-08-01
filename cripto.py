@@ -99,35 +99,25 @@ def generate():
 def cripta():
     e=65537
     print('benvenuto nello strumento per criptare\n')
+    with open("dati_privati.json", "r", encoding="utf-8") as f:
+        dati = json.load(f)
+    N=dati["N"]
+    p=dati["p"]
+    q=dati["q"]
+    phi=dati["phi"]
+    d=dati["d"]
     while True:
-        print("Hai i dati salvati nei file creati dal sistema?")
-        print("y/n")
-        a=input()
-        if a=="y":
-            try:
-                with open("dati_privati.json", "r", encoding="utf-8") as f:
-                    dati = json.load(f)
-                N = dati["N"]
-                d = dati["d"]
-                print("dati caricati con sucesso")
-                n=int(input("N pubblico ricevente: "))
+        try:
+            with open("contatti.json", "r", encoding="utf-8") as f:
+                    rubrica = json.load(f)
+            nome=input("Con chi stai parlando? ")
+            if nome in rubrica:
+                n=rubrica[nome]["N"]
                 break
-            except FileNotFoundError:
-                print(f"[-] Errore: Il file dati_privati non esiste! Controlla il nome o il percorso.")
-
-            except json.JSONDecodeError:
-                print("[-] Errore: Il file esiste ma non è un JSON valido (è corrotto o vuoto).")
-            except Exception as e:
-                print(f"[-] Si è verificato un errore generico: {e}")
-
-            
-        elif a=="n":
-            n=int(input("N pubblico ricevente: "))
-            N=int(input("N pubblico mandante: "))
-            d=int(input("d privato: "))
-            break
-        else:
-            print("Valore non valido")
+            else:
+                print("Non hai questo contato in rubrica.")
+        except FileNotFoundError:
+            print("Non hai ancora contatti")
     c=input("c: ").encode("utf-8")
     key = get_random_bytes(32)
     hash_bytes = hashlib.sha256(c).digest()
@@ -144,7 +134,7 @@ def cripta():
     if key_N<n:
         final_key=long_to_bytes((pow(key_N, e, n)))
     else:
-        print("N troppo picollo per il messaggio")
+        print("n troppo picollo per il messaggio")
     
     pacchetto = {
     "chiave_aes_cifrata": base64.b64encode(final_key).decode(),
@@ -154,62 +144,28 @@ def cripta():
     "firma": base64.b64encode(s).decode()
 }
     final = json.dumps(pacchetto)
-    #final=bytes_to_long(final.encode("utf-8"))
+    
     
     print(final)
 def decripta():
     e=65537
     print('benvenuto nello strumento per decriptare\n')
     while True:
-        
-                print("Hai i dati salvati nei file creati dal sistema?")
-                print("y/n")
-                a=input()
-                if a=="y":
-                    try:
-                        with open("dati_privati.json", "r", encoding="utf-8") as f:
-                            dati = json.load(f)
-                        n = dati["N"]
-                        phi = dati["phi"]
-                        print("dati caricati con sucesso")
-                        Na=int(input("N del mandante del messaggio: "))
-                        break
-                    except FileNotFoundError:
-                        print(f"[-] Errore: Il file dati_privati non esiste! Controlla il nome o il percorso.")
-
-                    except json.JSONDecodeError:
-                        print("[-] Errore: Il file esiste ma non è un JSON valido (è corrotto o vuoto).")
-                    except Exception as e:
-                        print(f"[-] Si è verificato un errore generico: {e}")   
-                elif a=="n":
-                        Na=int(input("N del mandante del messaggio: "))
-                        print('Possiedi p e q?')
-                        a=input('y/n: ')
-                        if a=="y":
-                            p=int(input("p: "))
-                            q=int(input("q: "))
-                            n=p*q
-                            phi=(p-1)*(q-1)
-                            break
-                        elif a=="n":
-                            while True:
-                                print('possiedi n e phi?')
-                                a=input('y/n: ')
-                                if a=="y":
-                                    n=int(input('N: '))
-                                    phi=int(input('phi: '))
-                                    break
-                                if a=="n":
-                                    print("operazione non possibile:")
-                                    exit(0)
-                                else:
-                                    print("Scelta non valida")
-                            break
-                        else:
-                            print("Scelta non valida")
-                else:
-                    print("Valore non valido")          
-    d=pow(e, -1, phi)
+        nome=input("Con chi stai parlando? ")
+        with open("dati_privati.json", "r", encoding="utf-8") as f:
+            dati = json.load(f)
+        try:
+            with open("contatti.json", "r", encoding="utf-8") as f:
+                rubrica = json.load(f)
+        except FileNotFoundError:
+            print("Non hai ancora contatti")
+        N=dati["N"]
+        d=dati["d"]
+        if nome in rubrica:
+            Na=rubrica[nome]['N']
+            break
+        else:
+            print("Non hai questo contato in rubrica.")
     m=(input("m: "))
     pacchetto=json.loads(m)
     #estrazione dati
@@ -219,7 +175,7 @@ def decripta():
     tag = base64.b64decode(pacchetto["tag"])
     firma = base64.b64decode(pacchetto["firma"])
     chiave_aes_cifrata=bytes_to_long(chiave_aes_cifrata)
-    key=(long_to_bytes(pow(chiave_aes_cifrata, d, n)))#decodifica chaive aes
+    key=(long_to_bytes(pow(chiave_aes_cifrata, d, N)))#decodifica chaive aes
     firma=bytes_to_long(firma)
     firma=pow(firma, e, Na)
     firma=long_to_bytes(firma) #decodifica firma
@@ -238,7 +194,33 @@ def decripta():
     except ValueError:
         print("Chiave corrotta o non valida")
 
-
+def creazione():
+    nome=input("Nome del contatto: ")
+    e=65537
+    N=int(input("N del contatto: "))
+    try:
+        with open("contatti.json", "r", encoding="utf-8") as f:
+            dati = json.load(f)
+    except FileNotFoundError:
+        dati={}
+    dati[nome]= {
+    "N": N,
+    "e": e
+    }
+    with open("contatti.json", "w", encoding="utf-8") as f:
+        json.dump(dati, f, indent=4)
+def get_N(nome):
+    try:
+        with open("contatti.json", "r", encoding="utf-8") as f:
+                rubrica = json.load(f)
+                if nome in rubrica:
+                    n_trovato = rubrica[nome]["N"]
+                    return n_trovato
+                else:
+                    print(f"[-] Errore: Il contatto '{nome}' non esiste nella rubrica.")
+                    return None
+    except FileNotFoundError:
+        print("Non hai ancora contatti")
 
 while True:
     e=65537
@@ -247,7 +229,8 @@ while True:
     print("2. decriptare\n")
     print("3. generare p e q\n")
     print("4. crakkare N\n")
-    print("5. uscire\n")
+    print("5. Aggiungere un contatto in rubrica\n")
+    print("6. uscire\n")
     n=int(input("\n"))
     if(n==1):
         cripta()
@@ -257,6 +240,8 @@ while True:
         generate()
     if(n==4):
         crack()
-    if(n==5):
+    if n == 5:
+        creazione()
+    if(n==6):
         print("arrrivedrci")
         break   
