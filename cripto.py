@@ -1,4 +1,8 @@
 from Crypto.Util.number import getStrongPrime, bytes_to_long, long_to_bytes
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Signature import pss
+from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES
 import json
@@ -32,7 +36,6 @@ def crack():
             
     except:
         print('Problema inaspettato nella connesione\n')
-
 def generate():
     e=65537
     p = getStrongPrime(1024, e=65537)
@@ -65,11 +68,23 @@ def generate():
         print("y/n: ")
         a=input()
         if a=="y":
+            print("scegli una password per rendere sicuri i tuoi dati, ricordatela! ")
+            pasw=input()
+            key = hashlib.sha256(pasw.encode('utf-8')).digest()
+            cipher = AES.new(key, AES.MODE_EAX)
+            dati_private = json.dumps(dati_private).encode('utf-8')
+            
+            ciphertext, tag = cipher.encrypt_and_digest(dati_private)
+            pacchetto_privato = {
+                "nonce": base64.b64encode(cipher.nonce).decode(),
+                "ciphertext": base64.b64encode(ciphertext).decode(),
+                "tag": base64.b64encode(tag).decode()
+            }
             try:
                 with open("dati_pubblici.json", "w", encoding="utf-8") as f:
                     json.dump(dati_public, f, indent=4)
                 with open("dati_privati.json", "w", encoding="utf-8") as f:
-                    json.dump(dati_private, f, indent=4)
+                    json.dump(pacchetto_privato, f, indent=4)
                 print("File salvato con successo!")
             except PermissionError:
                 print("[-] Errore: Permesso negato! Non hai i diritti per scrivere in questa cartella.")
@@ -98,9 +113,23 @@ def generate():
         
 def cripta():
     e=65537
+    sec = ""
     print('benvenuto nello strumento per criptare\n')
     with open("dati_privati.json", "r", encoding="utf-8") as f:
         dati = json.load(f)
+    try:
+        nonce = base64.b64decode(dati["nonce"])
+        ciphertext = base64.b64decode(dati["ciphertext"])
+        tag = base64.b64decode(dati["tag"])
+        print("password per i dati privati:  ")
+        pasw=input()
+        key = hashlib.sha256(pasw.encode('utf-8')).digest()
+        cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+        dati = cipher.decrypt_and_verify(ciphertext, tag)   
+        dati = json.loads(dati.decode('utf-8'))
+    except:
+        print("riscontrato un errore")
+        return(0)
     N=dati["N"]
     p=dati["p"]
     q=dati["q"]
@@ -110,6 +139,20 @@ def cripta():
         try:
             with open("contatti.json", "r", encoding="utf-8") as f:
                     rubrica = json.load(f)
+            stringa = json.dumps(rubrica, sort_keys=True).encode("utf-8")
+            hash = hashlib.sha256(stringa).hexdigest()
+            try:
+                with open("security.txt", "r", encoding="utf-8") as f:
+                    sec = f.read()
+            except FileNotFoundError:
+                print("File di sicurezza non trovato")
+
+            if sec != hash:
+                print("I contatti sono stati manomessi, se non lo hai fatto tu potrei aver subito un attaco hacker, vuoi proseguire lo stesso? y/n:")
+                b=input()
+                if b=="n":
+                    print("Arrivederci")
+                    return(0)
             nome=input("Con chi stai parlando? ")
             if nome in rubrica:
                 n=rubrica[nome]["N"]
@@ -118,6 +161,7 @@ def cripta():
                 print("Non hai questo contato in rubrica.")
         except FileNotFoundError:
             print("Non hai ancora contatti")
+            return()
     c=input("c: ").encode("utf-8")
     key = get_random_bytes(32)
     hash_bytes = hashlib.sha256(c).digest()
@@ -149,16 +193,44 @@ def cripta():
     print(final)
 def decripta():
     e=65537
+    sec = ""
     print('benvenuto nello strumento per decriptare\n')
     while True:
         nome=input("Con chi stai parlando? ")
         with open("dati_privati.json", "r", encoding="utf-8") as f:
             dati = json.load(f)
         try:
+            nonce = base64.b64decode(dati["nonce"])
+            ciphertext = base64.b64decode(dati["ciphertext"])
+            tag = base64.b64decode(dati["tag"])
+            print("password per i dati privati:  ")
+            pasw=input()
+            key = hashlib.sha256(pasw.encode('utf-8')).digest()
+            cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+            dati = cipher.decrypt_and_verify(ciphertext, tag)   
+            dati = json.loads(dati.decode('utf-8'))
+        except:
+            print("riscontrato un errore")
+            return(0)
+        try:
             with open("contatti.json", "r", encoding="utf-8") as f:
                 rubrica = json.load(f)
         except FileNotFoundError:
             print("Non hai ancora contatti")
+            return()
+        stringa = json.dumps(rubrica, sort_keys=True).encode("utf-8")
+        hash = hashlib.sha256(stringa).hexdigest()
+        try:
+            with open("security.txt", "r", encoding="utf-8") as f:
+                sec = f.read()
+        except FileNotFoundError:
+            print("file di sicurezza non trovato")
+        if sec != hash:
+            print("I contatti sono stati manomessi, se non lo hai fatto tu potrei aver subito un attaco hacker, vuoi proseguire lo stesso? y/n:")
+            b=input()
+            if b=="n":
+                print("Arrivederci")
+                return(0)
         N=dati["N"]
         d=dati["d"]
         if nome in rubrica:
@@ -207,6 +279,10 @@ def creazione():
     "N": N,
     "e": e
     }
+    stringa = json.dumps(dati, sort_keys=True).encode("utf-8")
+    hash = hashlib.sha256(stringa).hexdigest()
+    with open("security.txt", "w", encoding="utf-8") as f:
+        f.write(hash)
     with open("contatti.json", "w", encoding="utf-8") as f:
         json.dump(dati, f, indent=4)
 def get_N(nome):
