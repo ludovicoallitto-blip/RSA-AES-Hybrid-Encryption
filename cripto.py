@@ -9,7 +9,10 @@ import json
 import base64
 import hashlib
 from factordb.factordb import FactorDB
+import getpass
+import socket
 e=65537
+
 def crack():
     n=int(input('N: '))
     try:
@@ -68,8 +71,7 @@ def generate():
         print("y/n: ")
         a=input()
         if a=="y":
-            print("scegli una password per rendere sicuri i tuoi dati, ricordatela! ")
-            pasw=input()
+            pasw=getpass.getpass("scegli una password per rendere sicuri i tuoi dati, ricordatela! ")
             key = hashlib.sha256(pasw.encode('utf-8')).digest()
             cipher = AES.new(key, AES.MODE_EAX)
             dati_private = json.dumps(dati_private).encode('utf-8')
@@ -121,8 +123,7 @@ def cripta():
         nonce = base64.b64decode(dati["nonce"])
         ciphertext = base64.b64decode(dati["ciphertext"])
         tag = base64.b64decode(dati["tag"])
-        print("password per i dati privati:  ")
-        pasw=input()
+        pasw=getpass.getpass("password per i dati privati:  ")
         key = hashlib.sha256(pasw.encode('utf-8')).digest()
         cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
         dati = cipher.decrypt_and_verify(ciphertext, tag)   
@@ -169,7 +170,7 @@ def cripta():
     if hash_bytes<N:
         s=pow(hash_bytes, d, N)
     else:
-        print("N troppo picollo per il messaggio")
+        print("N troppo piccolo per il messaggio")
     s=long_to_bytes(s) #fine generazione firma
     cipher = AES.new(key, AES.MODE_EAX)
     nonce = cipher.nonce
@@ -178,7 +179,7 @@ def cripta():
     if key_N<n:
         final_key=long_to_bytes((pow(key_N, e, n)))
     else:
-        print("n troppo picollo per il messaggio")
+        print("n troppo piccolo per il messaggio")
     
     pacchetto = {
     "chiave_aes_cifrata": base64.b64encode(final_key).decode(),
@@ -187,10 +188,24 @@ def cripta():
     "tag": base64.b64encode(tag).decode(),
     "firma": base64.b64encode(s).decode()
 }
-    final = json.dumps(pacchetto)
+    final = json.dumps(pacchetto).encode('utf-8')
+    HOST = str(input("Inserisci l'indirizzo ip del destinatario xxx.xxx.xxx.xxx: "))
+    PORT = int(input("Inserisci la porta dove comunicare"))
+    try:
+        co=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        co.connect((HOST, PORT))
+        
+        print(f"connesso con ip: {HOST}")
+        co.sendall(final)
+        co.close()
+        print("messaggio inviato con successo.\n")
+    except Exception as e:
+        print(f"Si è verificato un errore, riprovare. {e}\n")
+        return(0)
+
+
     
     
-    print(final)
 def decripta():
     e=65537
     sec = ""
@@ -203,8 +218,7 @@ def decripta():
             nonce = base64.b64decode(dati["nonce"])
             ciphertext = base64.b64decode(dati["ciphertext"])
             tag = base64.b64decode(dati["tag"])
-            print("password per i dati privati:  ")
-            pasw=input()
+            pasw=getpass.getpass("password per i dati privati:  ")
             key = hashlib.sha256(pasw.encode('utf-8')).digest()
             cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
             dati = cipher.decrypt_and_verify(ciphertext, tag)   
@@ -238,7 +252,22 @@ def decripta():
             break
         else:
             print("Non hai questo contato in rubrica.")
-    m=(input("m: "))
+
+    HOST = '0.0.0.0'
+    PORT = int(input("Inserisci la porta dove comunicare"))
+    try:
+        co=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        co.bind((HOST, PORT))
+        co.listen(1)
+        conn, addr = co.accept()
+        print(f"connesso con ip: {addr}")
+        m=conn.recv(4096).decode('utf-8')
+        conn.close()
+        co.close()
+        print("Messaggio ricevuto con successo\n")
+    except Exception as e:
+        print(f"Errore imprevisto riprovare.{e}\n")
+        return(0)
     pacchetto=json.loads(m)
     #estrazione dati
     chiave_aes_cifrata = base64.b64decode(pacchetto["chiave_aes_cifrata"])
