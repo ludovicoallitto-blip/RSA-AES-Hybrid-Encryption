@@ -128,6 +128,9 @@ def cripta():
         cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
         dati = cipher.decrypt_and_verify(ciphertext, tag)   
         dati = json.loads(dati.decode('utf-8'))
+    except ValueError:
+        print("Errore: Password errata o file manomesso!")
+        return(0)
     except:
         print("riscontrato un errore")
         return(0)
@@ -223,6 +226,9 @@ def decripta():
             cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
             dati = cipher.decrypt_and_verify(ciphertext, tag)   
             dati = json.loads(dati.decode('utf-8'))
+        except ValueError:
+            print("Errore: Password errata o file manomesso!")
+            return(0)
         except:
             print("riscontrato un errore")
             return(0)
