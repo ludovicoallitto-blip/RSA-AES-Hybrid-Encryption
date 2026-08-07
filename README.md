@@ -1,41 +1,34 @@
 # RSA-AES-Hybrid-Encryption
 Hybrid RSA-AES Encryption and Signature Tool
 
-Un sistema di cifratura ibrida sicuro sviluppato in Python, che unisce la velocità della crittografia simmetrica (AES-256) alla sicurezza della crittografia asimmetrica (RSA), integrando firme digitali e un modulo di analisi per testare la robustezza dei moduli N tramite FactorDB.
+RSA-AES Hybrid Encrypted Messaging and Network Tool un applicazione in Python da riga di comando che implementa un sistema avanzato di messaggistica cifrata end-to-end con comunicazione di rete basata su socket TCP Il progetto unisce la sicurezza della crittografia asimmetrica RSA alla velocita della crittografia simmetrica AES integrando firme digitali protezione dei dati a riposo controllo di integrita della rubrica e un modulo di analisi FactorDB.
 
-Caratteristiche Principali
+Caratteristiche Principali.
+La comunicazione di rete tramite socket TCP permette di inviare e ricevere pacchetti JSON cifrati direttamente tra due terminali gestendo autonomamente la connessione Client e Server.
+La cifratura ibrida efficiente utilizza AES in modalita EAX per cifrare messaggi di qualsiasi lunghezza proteggendo la chiave di sessione AES tramite cifratura RSA asimmetrica.
+Le firme digitali autenticate garantiscono l integrita del messaggio e l identita del mittente tramite hashing SHA-256 e firme digitali RSA.
+La protezione dati a riposo assicura che i dati privati e le chiavi locali siano cifrati con AES-256 utilizzando una password protetta da hash SHA-256 e inserita in modo sicuro tramite la libreria getpass.
+L integrita della rubrica contatti e verificata automaticamente tramite hash SHA-256 salvato in un file di controllo per rilevare tempestivamente qualsiasi tentativo di manomissione.
+L integrazione con FactorDB include uno strumento per interrogare il database pubblico FactorDB e testare lo stato di fattorizzazione di un modulo N.
+L interfaccia CLI interattiva offre un menu a terminale strutturato per gestire chiavi contatti cifratura decifratura e test di rete.
 
-* Cifratura Ibrida Efficiente: Usa l'AES (modalità EAX) per cifrare messaggi di qualsiasi lunghezza in modo istantaneo, proteggendo la chiave AES tramite RSA.
-* Firme Digitali Autenticate: Garantisce l'integrità e l'identità del mittente tramite hashing SHA-256 e firme RSA.
-* Gestione delle Chiavi su File: Permette di salvare e ricaricare in modo sicuro le chiavi pubbliche e private tramite file JSON locali.
-* Integrazione con FactorDB: Include uno strumento integrato per verificare lo stato di fattorizzazione di un modulo N tramite il database pubblico FactorDB.
-* Interfaccia CLI Interattiva: Un menu a terminale semplice e intuitivo per gestire tutte le operazioni.
+Requisiti e Installazione.
+Il progetto richiede Python 3 e le librerie crittografiche necessarie. Dopo aver clonato o scaricato la repository e possibile installare le dipendenze eseguendo da terminale pip install pycryptodome factordb-python.
 
-Requisiti e Installazione
+Come Utilizzare il Programma.
+Avvia lo script principale dal terminale digitando python3 cripto.py.
+Il menu principale offre sei opzioni operative.
+La prima opzione permette di criptare e inviare un messaggio sbloccando i dati privati selezionando un contatto cifrando il testo con AES e firma digitale e inviando il pacchetto via socket inserendo l indirizzo IP e la porta.
+La seconda opzione consente di ricevere e decriptare un messaggio mettendo il computer in ascolto su una porta di rete per ricevere il pacchetto decodificare la chiave AES verificare il tag di integrita e autenticare la firma.
+La terza opzione genera nuove chiavi p e q creando numeri primi forti e calcolando i parametri RSA con salvataggio sicuro protetto da password.
+La quarta opzione interroga FactorDB per verificare se un modulo N e fattorizzato o vulnerabile.
+La quinta opzione aggiunge un contatto in rubrica inserendo nome e modulo N pubblico aggiornando l hash di sicurezza.
+La sesta opzione termina l esecuzione del programma.
 
-Il progetto richiede Python 3 e le librerie crittografiche standard del settore.
+Informazioni di Sicurezza.
+Le chiavi RSA utilizzano numeri primi forti generati tramite getStrongPrime a 1024 bit per singolo fattore con modulo N totale di 2048 bit.
+La cifratura simmetrica sfrutta lo standard AES in modalita EAX assicurando riservatezza e autenticazione dei dati.
+L utilizzo di getpass previene la visualizzazione accidentale delle password sullo schermo durante la digitazione.
 
-1. Clona o scarica questa repository.
-2. Installa le dipendenze necessarie eseguendo da terminale:
-pip install pycryptodome factordb-python
-
-Come Utilizzare il Programma
-
-Avvia lo script principale dal tuo terminale:
-python3 cripto.py
-
-Dal menu principale potrai scegliere tra 5 opzioni:
-
-1. Cifrare un messaggio: Cifra un testo in chiaro generando una chiave AES protetta da RSA e firmando digitalmente il contenuto.
-2. Decifrare un messaggio: Legge il pacchetto JSON cifrato, sblocca la chiave AES, verifica l'integrità del Tag e autentica la firma del mittente.
-3. Generare chiavi RSA: Crea una nuova coppia di chiavi a 1024 bit e offre la possibilità di salvarle in formato JSON (dati_pubblici.json e dati_privati.json).
-4. Analizzare N (FactorDB): Interroga il database pubblico FactorDB per verificare se un modulo N è stato fattorizzato o se è sicuro.
-5. Uscire dal programma.
-
-Informazioni di Sicurezza
-
-* Le chiavi RSA sono generate usando numeri primi forti a 1024 bit per un modulo N totale di 2048 bit.
-* La cifratura simmetrica sfrutta lo standard AES in modalità EAX, garantendo sia la riservatezza che la protezione contro la manomissione dei dati.
-
-Autore
-Creato da Ludovico come progetto di approfondimento sulla crittografia moderna.
+Autore.
+Creato da Ludovico come progetto di approfondimento sulla crittografia moderna e la programmazione di rete in Python.
